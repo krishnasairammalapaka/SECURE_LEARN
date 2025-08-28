@@ -26,6 +26,20 @@ class SupabaseService {
     final role = response['role'] as String?;
     return role?.toLowerCase();
   }
+
+  // For simple DB-based auth against public.profiles (username/password in plain text)
+  static Future<Map<String, dynamic>?> getProfileByCredentials({
+    required String username,
+    required String password,
+  }) async {
+    final data = await client
+        .from('profiles')
+        .select('id, full_name, username, role')
+        .eq('username', username)
+        .eq('password', password)
+        .maybeSingle();
+    return data;
+  }
 }
 
 

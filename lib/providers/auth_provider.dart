@@ -6,7 +6,7 @@ import 'dart:convert';
 
 class AuthProvider with ChangeNotifier {
   // Temporary local-bypass for authentication during development
-  static const bool _bypassAuthLocally = true; // set to false to use Supabase
+  static const bool _bypassAuthLocally = false; // using DB-based auth via Supabase
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   bool _isAuthenticated = false;
   String? _currentUser;
@@ -64,53 +64,19 @@ class AuthProvider with ChangeNotifier {
         return false;
       }
 
-      // Hash password for comparison (in real app, this would be done server-side)
-      final hashedPassword = _hashPassword(trimmedPassword);
-      
-      // Demo credentials (in real app, this would be validated against a server)
-      final Map<String, String> validCredentials = {
-        'admin': 'admin123',
-        'student': 'student123',
-        'teacher': 'teacher123',
-        'developer': 'dev123',
-        'tester': 'test123',
-        // Temporary demo aliases
-        'demo': 'demo123',
-        'user': 'user123',
-      };
-      
-      final expectedPassword = validCredentials[normalizedUsername] ?? '';
-      final hashedValidPassword = _hashPassword(expectedPassword);
-      
-      if (hashedPassword == hashedValidPassword && validCredentials.containsKey(normalizedUsername)) {
-        _isAuthenticated = true;
-        _currentUser = normalizedUsername;
-        _userRole = _getUserRole(normalizedUsername);
-        // Generate a secure token (in real app, this would come from server)
-        final token = _generateSecureToken(normalizedUsername);
-        // Store credentials securely
-        await _secureStorage.write(key: 'auth_token', value: token);
-        await _secureStorage.write(key: 'current_user', value: normalizedUsername);
-        await _secureStorage.write(key: 'user_role', value: _userRole);
-        notifyListeners();
-        return true;
-      }
-      
-      // Fallback to Supabase password sign in (expects email usernames)
-      final response = await SupabaseService.signInWithPassword(
-        email: username,
-        password: password,
+      // DB-based auth against public.profiles (username/password)
+      final profile = await SupabaseService.getProfileByCredentials(
+        username: normalizedUsername,
+        password: trimmedPassword,
       );
-      if (response.user != null) {
-        final user = response.user!;
-        // Fetch role from profiles table (id must match auth user id)
-        final fetchedRole = await SupabaseService.getUserRoleByUserId(user.id);
+      if (profile != null) {
         _isAuthenticated = true;
-        _currentUser = user.email ?? username;
+        _currentUser = profile['username'] as String? ?? normalizedUsername;
+        final fetchedRole = (profile['role'] as String?)?.toLowerCase();
         _userRole = (fetchedRole == 'admin' || fetchedRole == 'teacher' || fetchedRole == 'student')
             ? fetchedRole
             : 'student';
-        final token = response.session?.accessToken ?? _generateSecureToken(_currentUser!);
+        final token = _generateSecureToken(_currentUser!);
         await _secureStorage.write(key: 'auth_token', value: token);
         await _secureStorage.write(key: 'current_user', value: _currentUser);
         await _secureStorage.write(key: 'user_role', value: _userRole);
