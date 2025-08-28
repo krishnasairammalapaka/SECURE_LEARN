@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../roles/admin/dashboard.dart' as admin;
 import '../roles/teacher/dashboard.dart' as teacher;
 import '../roles/student/dashboard.dart' as student;
+import '../roles/common/profile_page.dart';
 import '../providers/auth_provider.dart';
 import '../providers/security_provider.dart';
 import '../utils/theme.dart';
@@ -512,8 +513,6 @@ class ProfileTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Profile coming soon...'),
-    );
+    return const ProfilePage();
   }
 }

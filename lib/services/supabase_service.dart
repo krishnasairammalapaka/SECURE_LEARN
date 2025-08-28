@@ -40,6 +40,40 @@ class SupabaseService {
         .maybeSingle();
     return data;
   }
+
+  static Future<Map<String, dynamic>?> getProfileByUsername({
+    required String username,
+  }) async {
+    final data = await client
+        .from('profiles')
+        .select('id, full_name, username, role, created_at')
+        .eq('username', username)
+        .maybeSingle();
+    return data;
+  }
+
+  static Future<bool> verifyProfileCredentials({
+    required String username,
+    required String password,
+  }) async {
+    final data = await client
+        .from('profiles')
+        .select('id')
+        .eq('username', username)
+        .eq('password', password)
+        .maybeSingle();
+    return data != null;
+  }
+
+  static Future<void> updateProfilePassword({
+    required String username,
+    required String newPassword,
+  }) async {
+    await client
+        .from('profiles')
+        .update({'password': newPassword})
+        .eq('username', username);
+  }
 }
 
 
